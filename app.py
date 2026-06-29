@@ -3,10 +3,21 @@ import tensorflow as tf
 import numpy as np
 from PIL import Image
 
-# Load Model
-model = tf.keras.models.load_model("brain_tumor_model.keras")
+# Page Configuration
+st.set_page_config(
+    page_title="Brain Tumor Detection",
+    page_icon="🧠",
+    layout="centered"
+)
 
-# Class Names
+# Load Trained Model
+@st.cache_resource
+def load_model():
+    return tf.keras.models.load_model("brain_tumor_model.keras")
+
+model = load_model()
+
+# Class Labels
 classes = [
     "Glioma",
     "Meningioma",
@@ -15,8 +26,7 @@ classes = [
 ]
 
 # Title
-st.title("🔥 SAMEENA'S BRAIN TUMOR DETECTION APP 🔥")
-
+st.title("🧠 Brain Tumor Detection")
 st.write("Upload a Brain MRI image to predict the tumor type.")
 
 # Upload Image
@@ -27,25 +37,28 @@ uploaded_file = st.file_uploader(
 
 if uploaded_file is not None:
 
-    image = Image.open(uploaded_file)
-
+    # Display uploaded image
+    image = Image.open(uploaded_file).convert("RGB")
     st.image(image, caption="Uploaded MRI Image", use_container_width=True)
 
-    # Preprocess Image
+    # Preprocess image
     img = image.resize((128, 128))
-    img = np.array(img)
-
-    img = img / 255.0
-
+    img = np.array(img) / 255.0
     img = np.expand_dims(img, axis=0)
 
-    # Prediction
+    # Predict
     prediction = model.predict(img)
 
     predicted_class = np.argmax(prediction)
-
     confidence = np.max(prediction) * 100
 
+    # Display results
     st.success(f"Prediction: {classes[predicted_class]}")
-
     st.info(f"Confidence: {confidence:.2f}%")
+
+    # Show probabilities
+    st.subheader("Prediction Probabilities")
+
+    for i, cls in enumerate(classes):
+        st.write(f"**{cls}: {prediction[0][i] * 100:.2f}%**")
+        st.progress(float(prediction[0][i]))
